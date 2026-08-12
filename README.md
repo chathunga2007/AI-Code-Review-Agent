@@ -151,5 +151,5 @@ Distributed under the MIT License.
 ---
 
 <p align="center">
-  Developed with ❤️ by <a href="https://github.com/chathunga2007">Chathunga Bimsara</a>
+  Developed By ❤️ <a href="https://github.com/chathunga2007">Chathunga Bimsara</a>
 </p>
