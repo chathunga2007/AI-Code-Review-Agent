@@ -63,6 +63,14 @@ if st.session_state.history:
 else:
   st.sidebar.write("No previous reviews yet.")
 
+# Sidebar Footer / Copyright Section Added Here!
+st.sidebar.markdown("---")
+st.sidebar.markdown(
+    "<p style='text-align: center; color: #a0a0a0; font-size: 12px;'>Developed"
+    " with ❤️ by <b>Chathunga Bimsara</b><br>© 2026 All Rights Reserved</p>",
+    unsafe_allow_html=True,
+)
+
 if st.button("🚀 Run AI Review & Generate Docs"):
   if not user_code.strip():
     st.warning("Please provide some source code first!")
@@ -107,7 +115,7 @@ if st.button("🚀 Run AI Review & Generate Docs"):
             llm=gemini_llm,
         )
 
-        # 2. Define Tasks (Directly embedding user_code to prevent any file reading mix-ups)
+        # 2. Define Tasks
         review_task = Task(
             description=(
                 f"Read and analyze the following {language} source code"
