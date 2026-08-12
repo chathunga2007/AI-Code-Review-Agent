@@ -19,6 +19,10 @@ st.write(
     " language, and let our AI Architecture Crew analyze it!"
 )
 
+# Initialize session state for history if not exists
+if "history" not in st.session_state:
+  st.session_state.history = []
+
 # Sidebar for options
 st.sidebar.header("⚙️ Configuration")
 language = st.sidebar.selectbox(
@@ -32,9 +36,22 @@ input_method = st.radio(
 
 user_code = ""
 
+# Map language to file extension
+ext_map = {
+    "Python": "py",
+    "Java": "java",
+    "JavaScript": "js",
+    "TypeScript": "ts",
+    "HTML/CSS": "html",
+    "C++": "cpp",
+    "Other": "txt",
+}
+file_ext = ext_map.get(language, "py")
+
 if input_method == "Upload Code File":
   uploaded_file = st.file_uploader(
-      "Upload your code file", type=["py", "java", "js", "ts", "html", "css", "cpp"]
+      "Upload your code file",
+      type=["py", "java", "js", "ts", "html", "css", "cpp", "txt"],
   )
   if uploaded_file is not None:
     user_code = uploaded_file.read().decode("utf-8")
@@ -43,8 +60,20 @@ else:
   user_code = st.text_area(
       "Paste your source code here:",
       height=200,
-      placeholder="def add(a, b):\n    return a + b",
+      placeholder="Paste your source code here...",
   )
+
+# Sidebar History Section
+st.sidebar.header("📜 Review History")
+selected_history_report = None
+if st.session_state.history:
+  for i, past_review in enumerate(st.session_state.history):
+    if st.sidebar.button(
+        f"Review {i+1} ({past_review['lang']})", key=f"hist_{i}"
+    ):
+      selected_history_report = past_review
+else:
+  st.sidebar.write("No previous reviews yet.")
 
 if st.button("🚀 Run AI Review & Generate Docs"):
   if not user_code.strip():
@@ -52,8 +81,9 @@ if st.button("🚀 Run AI Review & Generate Docs"):
   else:
     with st.spinner("AI Agents are analyzing your code architecture..."):
 
-      # 1. Temporarily save code into sample file
-      with open("sample.py", "w", encoding="utf-8") as f:
+      # 1. Dynamically save code into correct extension file name
+      file_name = f"sample_code.{file_ext}"
+      with open(file_name, "w", encoding="utf-8") as f:
         f.write(user_code)
 
       # 2. Setup Gemini LLM
@@ -69,8 +99,8 @@ if st.button("🚀 Run AI Review & Generate Docs"):
         code_reviewer = Agent(
             role="Senior Software Code Reviewer",
             goal=(
-                f"Analyze the provided {language} source code for bugs, logic"
-                " errors, and security vulnerabilities."
+                f"Analyze the provided {language} source code in {file_name} for"
+                " bugs, logic errors, and security vulnerabilities."
             ),
             backstory=(
                 "You are an expert software architect with 10+ years of"
@@ -97,8 +127,8 @@ if st.button("🚀 Run AI Review & Generate Docs"):
         # 4. Define Tasks
         review_task = Task(
             description=(
-                "Read the code in the sample.py file, analyze its logic, and"
-                " find any potential issues or improvements."
+                f"Read the source code in the {file_name} file, analyze its"
+                " logic, and find any potential issues or improvements."
             ),
             expected_output=(
                 "A detailed bulleted list of code bugs, issues, and suggested"
@@ -130,15 +160,23 @@ if st.button("🚀 Run AI Review & Generate Docs"):
         result = code_review_crew.kickoff()
         report_text = str(result)
 
-        # 6. Display Result in Streamlit UI
+        # Save to history session state
+        st.session_state.history.append({"lang": language, "report": report_text})
+
+        # Display Result in Streamlit UI
         st.success("Analysis Complete!")
         st.markdown("### 📄 Final Agent Report")
         st.markdown(report_text)
 
-        # 7. Download Button for Report
+        # Download Button for Report
         st.download_button(
             label="📥 Download Markdown Report",
             data=report_text,
             file_name="Code_Review_Report.md",
             mime="text/markdown",
         )
+
+# If user clicked a history item from sidebar, show it
+if selected_history_report:
+  st.markdown(f"### 📄 Past Report ({selected_history_report['lang']})")
+  st.markdown(selected_history_report["report"])
