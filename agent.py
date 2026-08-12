@@ -5,9 +5,9 @@ from dotenv import load_dotenv
 # .env file eken API key eka load karagannawa
 load_dotenv()
 
-# Gemini Free LLM eka setup karagannawa (CrewAI native support)
+# Gemini aluth model name eka (gemini-2.5-flash) use karannawa
 gemini_llm = LLM(
-    model="gemini/gemini-1.5-flash",
+    model="gemini/gemini-2.5-flash",
     api_key=os.getenv("GEMINI_API_KEY"),
     temperature=0.2,
 )
@@ -64,7 +64,7 @@ code_review_crew = Crew(
     verbose=True,
 )
 
-print("## AI Agent is analyzing your code with Gemini Flash... ##")
+print("## AI Agent is analyzing your code with Gemini 2.5 Flash... ##")
 result = code_review_crew.kickoff()
 
 print("\n\n########################")
