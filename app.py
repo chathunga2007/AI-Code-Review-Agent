@@ -27,26 +27,14 @@ if "history" not in st.session_state:
 st.sidebar.header("⚙️ Configuration")
 language = st.sidebar.selectbox(
     "Select Programming Language",
-    ["Python", "Java", "JavaScript", "TypeScript", "HTML/CSS", "C++", "Other"],
+    ["Java", "Python", "JavaScript", "TypeScript", "HTML/CSS", "C++", "Other"],
 )
 
 input_method = st.radio(
-    "Choose input method:", ["Upload Code File", "Paste Code Text"]
+    "Choose input method:", ["Paste Code Text", "Upload Code File"]
 )
 
 user_code = ""
-
-# Map language to file extension
-ext_map = {
-    "Python": "py",
-    "Java": "java",
-    "JavaScript": "js",
-    "TypeScript": "ts",
-    "HTML/CSS": "html",
-    "C++": "cpp",
-    "Other": "txt",
-}
-file_ext = ext_map.get(language, "py")
 
 if input_method == "Upload Code File":
   uploaded_file = st.file_uploader(
@@ -59,7 +47,7 @@ if input_method == "Upload Code File":
 else:
   user_code = st.text_area(
       "Paste your source code here:",
-      height=200,
+      height=220,
       placeholder="Paste your source code here...",
   )
 
@@ -81,12 +69,7 @@ if st.button("🚀 Run AI Review & Generate Docs"):
   else:
     with st.spinner("AI Agents are analyzing your code architecture..."):
 
-      # 1. Dynamically save code into correct extension file name
-      file_name = f"sample_code.{file_ext}"
-      with open(file_name, "w", encoding="utf-8") as f:
-        f.write(user_code)
-
-      # 2. Setup Gemini LLM
+      # Setup Gemini LLM
       api_key = os.getenv("GEMINI_API_KEY")
       if not api_key:
         st.error("GEMINI_API_KEY not found in .env file!")
@@ -95,12 +78,12 @@ if st.button("🚀 Run AI Review & Generate Docs"):
             model="gemini/gemini-2.5-flash", api_key=api_key, temperature=0.2
         )
 
-        # 3. Define Agents
+        # 1. Define Agents
         code_reviewer = Agent(
             role="Senior Software Code Reviewer",
             goal=(
-                f"Analyze the provided {language} source code in {file_name} for"
-                " bugs, logic errors, and security vulnerabilities."
+                f"Analyze the provided {language} source code for bugs, logic"
+                " errors, and security vulnerabilities."
             ),
             backstory=(
                 "You are an expert software architect with 10+ years of"
@@ -124,11 +107,12 @@ if st.button("🚀 Run AI Review & Generate Docs"):
             llm=gemini_llm,
         )
 
-        # 4. Define Tasks
+        # 2. Define Tasks (Directly embedding user_code to prevent any file reading mix-ups)
         review_task = Task(
             description=(
-                f"Read the source code in the {file_name} file, analyze its"
-                " logic, and find any potential issues or improvements."
+                f"Read and analyze the following {language} source code"
+                f" carefully. Find any bugs, logic errors, architectural issues,"
+                f" or improvements:\n\n{user_code}"
             ),
             expected_output=(
                 "A detailed bulleted list of code bugs, issues, and suggested"
@@ -140,7 +124,8 @@ if st.button("🚀 Run AI Review & Generate Docs"):
         documentation_task = Task(
             description=(
                 "Take the review output and generate a professional Markdown"
-                " report explaining what the code does and how to improve it."
+                " report explaining what the code does, breaking down its"
+                " components, and providing recommendations."
             ),
             expected_output=(
                 "A clean Markdown format report with code breakdown and"
@@ -149,7 +134,7 @@ if st.button("🚀 Run AI Review & Generate Docs"):
             agent=tech_writer,
         )
 
-        # 5. Create Crew and Kickoff
+        # 3. Create Crew and Kickoff
         code_review_crew = Crew(
             agents=[code_reviewer, tech_writer],
             tasks=[review_task, documentation_task],
